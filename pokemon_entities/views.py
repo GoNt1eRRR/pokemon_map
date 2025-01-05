@@ -14,6 +14,13 @@ DEFAULT_IMAGE_URL = (
 )
 
 
+def get_pokemon_image_url(request, pokemon_image):
+    if pokemon_image:
+        return request.build_absolute_uri(pokemon_image.url)
+    return DEFAULT_IMAGE_URL
+
+
+
 def add_pokemon(folium_map, lat, lon, image_url=DEFAULT_IMAGE_URL):
     icon = folium.features.CustomIcon(
         image_url,
@@ -37,11 +44,7 @@ def show_all_pokemons(request):
     )
 
     for entity in pokemon_entities:
-        if entity.pokemon.image:
-            image_url = request.build_absolute_uri(entity.pokemon.image.url)
-        else:
-            image_url = DEFAULT_IMAGE_URL
-
+        image_url = get_pokemon_image_url(request, entity.pokemon.image)
         add_pokemon(
             folium_map,
             entity.latitude,
@@ -51,11 +54,7 @@ def show_all_pokemons(request):
 
     pokemons_on_page = []
     for pokemon in Pokemon.objects.all():
-        if pokemon.image:
-            img_url = request.build_absolute_uri(pokemon.image.url)
-        else:
-            img_url = DEFAULT_IMAGE_URL
-
+        img_url = get_pokemon_image_url(request, pokemon.image)
         pokemons_on_page.append({
             'pokemon_id': pokemon.id,
             'img_url': img_url,
@@ -70,7 +69,6 @@ def show_all_pokemons(request):
 
 def show_pokemon(request, pokemon_id):
     pokemon = get_object_or_404(Pokemon, id=pokemon_id)
-
     folium_map = folium.Map(location=MOSCOW_CENTER, zoom_start=12)
 
     current_time = timezone.localtime()
@@ -81,7 +79,7 @@ def show_pokemon(request, pokemon_id):
     )
 
     for entity in pokemon_entities:
-        entity_image_url = (request.build_absolute_uri(entity.pokemon.image.url) if entity.pokemon.image else DEFAULT_IMAGE_URL)
+        entity_image_url = get_pokemon_image_url(request, entity.pokemon.image)
         add_pokemon(
             folium_map,
             entity.latitude,
@@ -95,7 +93,7 @@ def show_pokemon(request, pokemon_id):
         'title_en': pokemon.title_en,
         'title_jp': pokemon.title_jp,
         'description': pokemon.description,
-        'img_url': (request.build_absolute_uri(pokemon.image.url) if pokemon.image else DEFAULT_IMAGE_URL),
+        'img_url': get_pokemon_image_url(request, pokemon.image),
         'entities': [],
     }
 
@@ -110,7 +108,7 @@ def show_pokemon(request, pokemon_id):
         pokemon_details['previous_evolution'] = {
             'pokemon_id': pokemon.previous_evolution.id,
             'title_ru': pokemon.previous_evolution.title,
-            'img_url': request.build_absolute_uri(pokemon.previous_evolution.image.url) if pokemon.previous_evolution.image else DEFAULT_IMAGE_URL
+            'img_url': get_pokemon_image_url(request, pokemon.previous_evolution.image),
         }
 
     next_evolution = pokemon.next_evolutions.first()
@@ -118,7 +116,7 @@ def show_pokemon(request, pokemon_id):
         pokemon_details['next_evolution'] = {
             'pokemon_id': next_evolution.id,
             'title_ru': next_evolution.title,
-            'img_url': request.build_absolute_uri(next_evolution.image.url) if next_evolution.image else DEFAULT_IMAGE_URL
+            'img_url': get_pokemon_image_url(request, next_evolution.image),
         }
 
     return render(request, 'pokemon.html', context={
